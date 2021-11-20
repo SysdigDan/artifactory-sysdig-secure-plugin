@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: scanner
+    app.kubernetes.io/instance: sysdig-admission-controller
+    app.kubernetes.io/name: admission-controller
+    app.kubernetes.io/version: 3.8.1
+  name: sysdig-admission-controller-scanner-external
+  namespace: sysdig-admission-controller
+spec:
+  ports:
+  - name: https
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/component: scanner
+    app.kubernetes.io/instance: sysdig-admission-controller
+    app.kubernetes.io/name: admission-controller
+  type: LoadBalancer
