@@ -1,12 +1,14 @@
 Sysdig Artifactory Plugin - Admission Controller Scanning Service
 ===============================
 
-The Sysdig Artifactory Plugin can utilise the Sysdig Admission Controller Scanning Service for local scanning.
+The Sysdig Artifactory Plugin can utilise the Sysdig Admission Controller Scanning Service for local scanning. 
+
+Note: For Artifactory Cloud this would require external access to the Admission Controller Service.
 
 Configuration
 -----------------
 1. Configure the Sysdig Admission Controller Scanning Service to be accessible by Artifactory
-2. Optional: Sysdig Admission Controller Articatory Credentials
+2. Optional: Sysdig Admission Controller Artifactory Credentials
 
 Sysdig Admission Controller Scanning Service
 -----------------
@@ -35,7 +37,7 @@ spec:
   type: LoadBalancer
 ```
 
-Optional: Sysdig Admission Controller Articatory Credentials
+Optional: Sysdig Admission Controller Artifactory Credentials
 -----------------
 If your container registry is protected with credentials, you will need to give the Sysdig Admission Controller access
 

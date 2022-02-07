@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+ /*
+ Based on artifactory user plugin example - Webhook - https://github.com/jfrog/artifactory-user-plugins/tree/master/webhook
+  */
+
 import com.google.common.collect.BiMap
 import com.google.common.collect.ImmutableBiMap
 import groovy.json.JsonBuilder
@@ -155,7 +159,6 @@ def dockerEventDecoratorWork(String event, JsonBuilder data) {
 }
 
 def dockerEventDecorator(String event, JsonBuilder data) {
-    // New tag creation
     if (event == Globals.SUPPORT_MATRIX.storage.afterCreate.name)
         dockerEventDecoratorWork(Globals.SUPPORT_MATRIX.docker.tagCreated.name, data)
 }
@@ -171,10 +174,8 @@ def hook(String event, JsonBuilder data) {
             log.trace(data.toString())
             SysdigPlugin.run(event, data)
         }
-        // Docker decorator should occur after the basic event  even if we don't care about the basic event
         dockerEventDecorator(event, data)
     } catch (Exception ex) {
-        // Don't risk failing the event by throwing an exception
         if (SysdigPlugin.debug())
             ex.printStackTrace()
         log.error("Plugin threw an exception: " + ex.getMessage())
@@ -227,7 +228,6 @@ class SysdigPlugin {
         if (active(event)) {
             def pluginListeners = triggers.get(event)
             if (pluginListeners) {
-                // We need to do this twice to do all async first
                 for (SysdigEndpointDetails pluginListener : pluginListeners) {
                     try {
                         if (pluginListener.isAsync()) {
@@ -236,7 +236,6 @@ class SysdigPlugin {
                                         new PostTask(pluginListener.url, pluginListener.token, getFormattedJSONString(json, event, pluginListener)))
                         }
                     } catch (Exception e) {
-                        // We don't capture async results
                         if (debug)
                             e.printStackTrace()
                     }
@@ -261,9 +260,8 @@ class SysdigPlugin {
 
     private boolean eventPassedRepositoryAndPathFilter(String event, Object json, SysdigEndpointDetails plugin) {
         boolean passesFilter = true
-        def jsonData = null // Don't slurp unless necessary to avoid overhead
+        def jsonData = null
         if (event.startsWith("storage") || event.startsWith("docker")) {
-            // Check repo if needed
             if (!plugin.allRepos()) {
                 jsonData = new JsonSlurper().parseText(json.toString())
                 def reposInEvent = findDeep(jsonData, REPO_KEY_NAME)
@@ -276,7 +274,7 @@ class SysdigPlugin {
                 }
                 passesFilter = found
             }
-            if (passesFilter && plugin.hasPathFilter()) { // Check path if needed
+            if (passesFilter && plugin.hasPathFilter()) {
                 if (jsonData == null)
                     jsonData = new JsonSlurper().parseText(json.toString())
                 def matches = false
@@ -373,13 +371,10 @@ class SysdigPlugin {
         def config = new JsonSlurper().parseText(inputFile.text)
         if (config) {
             loadPlugin(config)
-            // Debug flag
             if (config.containsKey("debug"))
                 p.debug = config.debug == true
-            // Timeout
             if (config.containsKey("timeout") && config.timeout > 0 && config.timeout <= MAX_TIMEOUT)
                 p.connectionTimeout = config.timeout
-            // BaseUrl
             if (config.containsKey("baseurl"))
                 p.baseUrl = config.baseurl
         }
@@ -389,16 +384,12 @@ class SysdigPlugin {
         if (cfg.sysdig.url && cfg.sysdig.token) {
             def sysdigDetails = new SysdigEndpointDetails()
             def event = "docker.tagCreated"
-            // Async
             if (cfg.containsKey('async'))
                 sysdigDetails.async = cfg.async
-            // Repositories
             if (cfg.containsKey('repositories'))
                 sysdigDetails.repositories = cfg.repositories
-            // Path filter
             if (cfg.containsKey('path'))
                 sysdigDetails.setPathFilter(cfg.path)
-            // Events
             sysdigDetails.url = "${cfg.sysdig.url}/api/scanning/v1/anchore/images"
             sysdigDetails.token = cfg.sysdig.token
             addEvent(event, sysdigDetails)
@@ -438,8 +429,8 @@ class SysdigPlugin {
         public static String ALL_REPOS = "*"
         def url
         def token
-        def format = null // Default
-        def repositories = [ALL_REPOS] // All
+        def format = null
+        def repositories = [ALL_REPOS]
         def async = true
         Pattern path = null
         String tag = null
@@ -477,10 +468,8 @@ class SysdigPlugin {
         }
 
         void setPathFilter(String searchString) {
-            // Remove leading '/'
             if (searchString.startsWith('/'))
                 searchString = searchString.substring(1)
-            //Set tag if one exists
             def tagIndex = searchString.indexOf(':')
             if (tagIndex >= 0 && tagIndex < searchString.length()-1) {
                 tag = searchString.substring(tagIndex+1)
